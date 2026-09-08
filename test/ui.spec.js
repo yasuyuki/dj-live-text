@@ -143,3 +143,19 @@ test('all six attributes agree between notation, GUI and shortcuts',async({brows
   await control.screenshot({path:'test-results/control.png',fullPage:true});
   await context.close();
 });
+test('pending track introduction is visibly busy and clear cancels its response',async({browser})=>{
+  const {context,control,output}=await harness(browser);
+  await control.evaluate(()=>{window.trackCandidate={connected:true,title:'A',artist:'Artist'};});
+  await expect(control.locator('#introduce')).toBeEnabled();
+  await control.evaluate(()=>{
+    const normal=window.host.track;
+    window.host.track=()=>{window.host.track=normal;return new Promise(resolve=>window.finishIntroduction=resolve);};
+    document.getElementById('introduce').click();
+  });
+  await expect(control.locator('#introduce')).toBeDisabled();
+  await control.locator('#clear').click();
+  await control.evaluate(()=>window.finishIntroduction({connected:true,title:'A',artist:'Artist'}));
+  await expect(control.locator('#introduce')).toBeEnabled();
+  expect(await visible(output)).toBe('');
+  await context.close();
+});

@@ -57,7 +57,7 @@ if(config.display!==null)$('display').value=String(config.display);
 editor.addEventListener('input',edited);
 editor.addEventListener('compositionstart',()=>{controller.compositionStart();$('show').disabled=true;$('introduce').disabled=true;});
 editor.addEventListener('compositionend',()=>{
-  $('show').disabled=false;$('introduce').disabled=!candidate.connected;
+  $('show').disabled=false;$('introduce').disabled=!candidate.connected||introducing;
   controller.compositionEnd(editor.value);preview();persist();
 });
 function format(action,value){
@@ -86,13 +86,13 @@ const actions={
   introduce:async()=>{
     if(controller.composing||!candidate.connected||introducing)return;
     const selected={...candidate}, revision=controller.revision,generation=trackGeneration;
-    introducing=true;
+    introducing=true;$('introduce').disabled=true;
     try{
       const fresh=await window.host.track();
       if(revision!==controller.revision||generation!==trackGeneration||controller.composing)return;
       if(!fresh.connected){candidate=fresh;$('introduce').disabled=true;$('track-info').textContent=fresh.error||'曲情報未取得';return;}
       await controller.introduce(selected);
-    }finally{introducing=false;syncLive();}
+    }finally{introducing=false;$('introduce').disabled=!candidate.connected||controller.composing;syncLive();}
   }
 };
 for(const [id,action] of Object.entries(actions))$(id).onclick=action;
@@ -143,7 +143,7 @@ async function poll(){
   if(generation!==trackGeneration){setTimeout(poll,0);return;}
   candidate=next;
   $('track-info').textContent=candidate.connected?`${candidate.title}\n${candidate.artist||'アーティスト不明'}`:(candidate.error||'曲情報未取得');
-  $('introduce').disabled=!candidate.connected||controller.composing;
+  $('introduce').disabled=!candidate.connected||controller.composing||introducing;
   setTimeout(poll,500);
 }
 setInterval(()=>{

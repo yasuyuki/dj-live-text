@@ -90,8 +90,10 @@ GUI書式変更後はエディターへフォーカスを戻し、ネイティ�
 ### Funkot連携
 
 [funkot-player](https://github.com/yasuyuki/funkot-player) だけを対象とします。
-現行の公開版に、このアプリ向けAPIがあるとは想定しません。
-必要な追加APIと候補の扱いは [設計メモ](docs/DESIGN.md) に記載しています。
+[連携APIを含むWindowsビルド](https://github.com/yasuyuki/funkot-player/blob/main/docs/current-track-api.md)
+が必要です。以前の配布版にはAPIがない場合があります。Funkot側を環境変数
+`FUNKOT_CURRENT_TRACK_PORT` で有効化し、このアプリに同じポートを設定します。
+APIと候補の扱いは [設計メモ](docs/DESIGN.md) に記載しています。
 連携ポート0はOFF。接続できない間も通常の文章送出・消去は使えます。
 曲情報は候補欄に届くだけで、曲紹介を押すまで送出しません。
 手動送出後は曲が変わっても表示を保ちます。曲紹介はライブ入力をOFFにし、下書きを保持します。

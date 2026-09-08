@@ -29,7 +29,7 @@ preserves native undo; this deprecated API is intentionally isolated in `control
 browser/native tests. There is no separate rich-text state. Performance goals from the request
 (about 100 ms and 30 fps capture) are acceptance targets, not claims established by unit tests.
 
-## Funkot protocol proposal / implementation dependency
+## Funkot integration
 
 The receiver requests `http://127.0.0.1:<configured-port>/now-playing` from the main process.
 Port 0 disables it. Only this literal loopback host and fixed route are accepted. Polls are serial,
@@ -48,13 +48,16 @@ is invalidated on disconnect, stop or malformed data. A title is required; missi
 as アーティスト不明 in the operator UI. The receiver retains only the latest candidate; a received
 update never writes the output. Metadata is constructed as literal runs, never parsed as notation.
 
-Public funkot-player source inspected at `b2ec415`: `NOW.now` defines current track, switching at
-transition end. `cached_tags_for` and `session_metadata_for` provide embedded title/artist and the
-filename fallback. No external current-track endpoint was found. The minimal proposed addition is
-an opt-in Windows loopback listener, `FUNKOT_CURRENT_TRACK_PORT`, independent of the audio callback,
-using NOW truth, suppressing audition/preparation, and setting playing=false when paused/stopped.
-It must not expose file paths, control playback, bind LAN, or alter existing playback truth.
+The producer is implemented in [funkot-player](https://github.com/yasuyuki/funkot-player/blob/main/docs/current-track-api.md).
+`NOW.now` defines current track, switching at transition end. Existing `cached_tags_for` and
+`session_metadata_for` resolve embedded tags and filename fallback. The opt-in Windows listener
+uses `FUNKOT_CURRENT_TRACK_PORT`, samples current state after metadata I/O, suppresses audition
+and preparation, and marks paused/stalled/disconnected playback as not playing. It runs outside
+the audio callback and does not hold NOW while probing tags. It exposes no file paths, controls,
+LAN binding, or new interpretation of playback truth. Browser Origin requests are rejected.
 
-**Producer API not yet added.** The player's AGENTS.md limits writes to the declared working-set
-member. That member is unavailable in this environment; using the new public clone for edits needs
-an explicit scope exception. Receiver tests use a local fake server and do not establish real integration.
+Use a producer build that includes this addition; earlier released builds may lack it. The
+receiver preserves the candidate selected at the button press, checks producer availability again,
+and ignores the pending introduction if clear/replace/settings/IME supersede it. This check does
+not automatically replace the selected candidate with a later track. Real playback plus manual
+introduction remains an acceptance trial; the producer's native smoke uses an idle process.

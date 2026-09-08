@@ -12,15 +12,13 @@ Run `npm ci`, `npx install-electron`, `npm start`; capture the output window onl
 Japanese IME, Unicode clusters, full screen/custom size, DPI and focus. Record capture and font
 results in docs/VERIFICATION.md. Linux browser success does not close this phase.
 
-Funkot producer editing additionally requires access to its declared working-set member or explicit
-user authorization for the new clone. Do not change an unauthorized clone or existing Windows source.
-
 ## C — real integration and performance (open)
 
 Executor: developer on authorized funkot-player source and actual Windows DJ/capture host.
-Add the minimum optional producer described in docs/DESIGN.md, following that repo's build/tests.
-No audio engine redesign or playback controls. The receiver already exists; fake data is not evidence
-of integration. Confirm real A/manual-send/B semantics, disconnect and ordinary text independence.
+Use the producer and receiver described in docs/DESIGN.md, following the existing Windows build
+and launch instructions. Their implementation is complete; fake data and an idle native producer
+are not evidence of actual DJ playback integration. Confirm real A/manual-send/B semantics,
+disconnect and ordinary text independence.
 
 Run `npm test`, `npm run test:ui`, `npm run package:win` from dj-live-text root. These commands exercise
 source, local temporary saved settings and a fake HTTP server; the native test launches/closes test
