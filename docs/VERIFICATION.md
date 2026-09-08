@@ -62,8 +62,10 @@ acceptance remain distinct from this automated native-host evidence.
 
 ## Required real-world trial (not executed)
 
-Use the actual Windows host and selected capture method. Record Windows version, display scale,
-output size, capture target, DJ version and this application's commit. Confirm Japanese IME
+The user selected OBS specified-region capture, with DJ Live Text used alongside funkot-player.
+Use that arrangement on the actual Windows host. Record Windows and OBS versions, display scale,
+output size, captured region, DJ version and this application's commit. Check the captured region
+for clipped text/effects and unintended controller content while operating both apps. Confirm Japanese IME
 conversion/commit/cancel, ordinary Enter/Space/Escape, shortcuts only in the controller,
 focus retained by typing/DJ, complete Japanese/emoji glyphs, fullscreen and alternate aspect ratios.
 

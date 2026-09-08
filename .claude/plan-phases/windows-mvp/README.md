@@ -7,8 +7,8 @@ are the contract; this plan adds no feature scope or approval gate.
 ## A — native risk acceptance (open)
 
 Executor: developer on actual Windows user desktop; repository root.
-Prerequisites: Node 24 or generated Windows folder; actual capture software and display areas.
-Run `npm ci`, `npx install-electron`, `npm start`; capture the output window only. Verify actual
+Prerequisites: Node 24 or generated Windows folder; OBS specified-region capture with DJ Live Text alongside funkot-player.
+Run `npm ci`, `npx install-electron`, `npm start`; use the selected OBS capture region. Verify actual
 Japanese IME, Unicode clusters, full screen/custom size, DPI and focus. Record capture and font
 results in docs/VERIFICATION.md. Linux browser success does not close this phase.
 
