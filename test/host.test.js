@@ -28,3 +28,14 @@ test('Funkot endpoint validation, literal metadata, stopped and connection loss'
   }finally{await new Promise(resolve=>server.close(resolve));}
   assert.equal((await readTrack(port)).connected,false);assert.equal((await readTrack(0)).connected,false);
 });
+test('Japanese and emoji metadata survive fragmented UTF-8 transport',async()=>{
+  const payload={version:1,title:'日本語 👨‍👩‍👧‍👦',artist:'歌手',playing:true};
+  const server=http.createServer((_req,res)=>{
+    const body=Buffer.from(JSON.stringify(payload));
+    const split=body.indexOf(Buffer.from('日'))+1;
+    res.write(body.subarray(0,split));setImmediate(()=>res.end(body.subarray(split)));
+  });
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  try {assert.deepEqual(await readTrack(server.address().port),{connected:true,title:payload.title,artist:payload.artist});}
+  finally {await new Promise(resolve=>server.close(resolve));}
+});

@@ -30,6 +30,8 @@ export function readTrack(port) {
   if (!Number.isInteger(port)||port<1||port>65535) return Promise.resolve({connected:false,error:'連携OFF — Funkot側で有効化したポートを設定してください。'});
   return new Promise(resolve=>{
     const req=http.get({hostname:'127.0.0.1',port,path:'/now-playing',headers:{Accept:'application/json'}},res=>{
+      // Preserve UTF-8 characters across arbitrary TCP/chunk boundaries.
+      res.setEncoding('utf8');
       let body='';
       // Protocol response contains two metadata strings; bound untrusted network data.
       res.on('data',part=>{body+=part;if(Buffer.byteLength(body)>65536)req.destroy(new Error('metadata too large'));});
