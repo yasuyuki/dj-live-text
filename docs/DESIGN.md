@@ -43,7 +43,7 @@ Expected JSON (no file paths or control commands):
 {"version":1,"title":"Track A","artist":"Artist","playing":true}
 ```
 
-Unknown/missing fields or unsuccessful responses cannot become a sendable candidate. The candidate
+Unknown versions/malformed required fields or unsuccessful responses cannot become a sendable candidate. The candidate
 is invalidated on disconnect, stop or malformed data. A title is required; missing artist is shown
 as アーティスト不明 in the operator UI. The receiver retains only the latest candidate; a received
 update never writes the output. Metadata is constructed as literal runs, never parsed as notation.

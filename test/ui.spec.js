@@ -39,11 +39,13 @@ test('manual snapshot, combined progression, interruption and literal DJ metadat
   await control.locator('#show').click();
   await control.locator('#advance').click();
   await expect.poll(()=>visible(output)).toBe('最初');
+  await output.evaluate(()=>Promise.all(document.getAnimations().map(a=>a.finished)));
   const positions=await output.locator('#stage .glyph').evaluateAll(els=>els.map(e=>({x:e.offsetLeft,y:e.offsetTop})));
   await control.locator('#draft').fill('まだ送出しない');
   expect(await visible(output)).toBe('最初');
   await control.locator('#advance').click();await control.locator('#advance').click();
   await expect.poll(()=>visible(output)).toBe('最初次のブロック');
+  await output.evaluate(()=>Promise.all(document.getAnimations().map(a=>a.finished)));
   expect(await output.locator('#stage .glyph').evaluateAll(els=>els.map(e=>({x:e.offsetLeft,y:e.offsetTop})))).toEqual(positions);
   await control.locator('#clear').click();await expect.poll(()=>visible(output)).toBe('');
   await control.evaluate(()=>{window.trackCandidate={connected:true,title:'<img src=x> **literal**',artist:'[red|artist]'};});
