@@ -6,8 +6,8 @@ jobs:
   windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.0.0
         with:
           node-version: '24'
           cache: npm
@@ -17,7 +17,7 @@ jobs:
       - run: npx playwright install chromium
       - run: npm run test:ui
       - run: npm run package:win
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7.0.1
         with:
           name: DJ-Live-Text-Windows-preview
           path: dist/DJ-Live-Text-win32-x64

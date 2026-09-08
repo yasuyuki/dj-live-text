@@ -13,7 +13,13 @@ DOM/parser/controller, but not Electron IPC or real Windows IME. Node HTTP tests
 
 Observed locally: Node 24.19.0, Electron package 44.2.0, Playwright 1.63.0 Chromium.
 11 Node tests passed; 9 browser tests passed; the Windows native test was skipped on Linux.
-Windows x64 folder packaging succeeded (not a Windows launch test).
+Windows x64 folder packaging succeeded locally.
+
+Windows CI [34235731478](https://github.com/yasuyuki/dj-live-text/actions/runs/34235731478)
+passed on source `1930c8c`: 11 Node tests and 10 Playwright tests, including the real Electron
+2-window test, then Windows x64 packaging and artifact upload. This proves native application
+startup/send/close/reopen/draft persistence/empty restart with the test profile, not actual IME,
+physical DPI/capture, real DJ playback or the 60-minute performance trial.
 Japanese Windows font coverage and real native input are unverified. Local browser checks use
 Noto Sans CJK JP and Noto Color Emoji; they do not certify Windows font fallback. A private local library prefix supplied missing Chromium dependencies for Linux
 checks; it is not a runtime dependency of the Windows artifact.
@@ -34,12 +40,12 @@ checks; it is not a runtime dependency of the Windows artifact.
 | A10 | HTTP disconnect/status/schema tests and text-only metadata rendering pass | Real producer disconnect/reconnect |
 | A11 | 1920×1080, 1280×720, 1600×400, 800×800 browser geometry passes; tiny resize stays failed through heartbeat | Native fullscreen, monitor selection and Windows DPI |
 | A12 | Minimum-font overflow rejects send and preserves old output | Capture readability and live long-text trial |
-| A13 | Stored schema omits live/current; defaults always empty output | Native restart test in Windows CI and actual installed run |
+| A13 | Stored schema omits live/current; defaults always empty output | Windows CI native restart passed; user-installed run remains |
 | A14 | No automated replacement for this condition | Real DJ playback + chosen capture method + comparison without tool |
 
-Windows native test is implemented for two windows, manual send, focus, output closure/reopen,
-custom background restoration, persisted draft and empty restart. Its result must be obtained
-on Windows before calling these conditions verified.
+Windows native test passed for two windows, manual send, focus, output closure/reopen,
+custom background restoration, persisted draft and empty restart. Real capture and keyboard/IME
+acceptance remain distinct from this automated native-host evidence.
 
 ## Required real-world trial (not executed)
 
