@@ -1,0 +1,17 @@
+:root {color-scheme:dark;font-family:'Yu Gothic','Meiryo','Noto Sans CJK JP','Segoe UI',sans-serif;}
+* {box-sizing:border-box;}
+html,body {margin:0;width:100%;height:100%;overflow:hidden;}
+body {background:#090b12;}
+.surface {position:absolute;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.text-stage {flex:none;text-align:center;font-weight:600;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere;}
+.text-block + .text-block {margin-top:.3em;}
+.glyph {display:inline-block;white-space:pre;vertical-align:baseline;}
+.emphasis {font-size:1.38em;font-weight:900;}
+.bullet {margin-right:.3em;}
+.glow .glyph {text-shadow:0 0 .08em currentColor,0 .03em .12em #000;}
+.impact .glyph {-webkit-text-stroke:.012em #111827;paint-order:stroke fill;text-shadow:.025em .035em 0 #12162a,0 .025em .055em #000;}
+.impact .enter {animation:impact-in .32s cubic-bezier(.16,.9,.28,1) both;}
+.glow .enter {animation:glow-in .22s ease-out both;}
+@keyframes impact-in {from{transform:translateY(.09em) scale(1.12);opacity:.25;}to{transform:translateY(0) scale(1);opacity:1;}}
+@keyframes glow-in {from{opacity:.1;transform:translateY(.04em);}to{opacity:1;transform:none;}}
+#measure {position:absolute;left:-100000px;top:0;visibility:hidden;}

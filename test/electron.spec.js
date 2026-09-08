@@ -1,0 +1,43 @@
+import {test,expect,_electron as electron} from '@playwright/test';
+import {mkdtemp,rm} from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+test('Windows native host: two windows, measured send, output close, persisted draft and empty restart',async()=>{
+  test.skip(process.platform!=='win32','Windows host verification runs on Windows only.');
+  const data=await mkdtemp(path.join(os.tmpdir(),'dj-live-text-electron-'));
+  let app;
+  try{
+    const launch=async()=>{
+      app=await electron.launch({args:['.'],env:{...process.env,DJ_LIVE_TEXT_DATA:data}});
+      await expect.poll(()=>app.windows().filter(p=>p.url().endsWith('.html')).length).toBe(2);
+      const control=app.windows().find(p=>p.url().endsWith('/index.html'));
+      const output=app.windows().find(p=>p.url().endsWith('/output.html'));
+      await expect(control.locator('#connection')).toContainText('接続中');
+      return {control,output};
+    };
+    let {control,output}=await launch();
+    await expect(output.locator('#stage .glyph')).toHaveCount(0);
+    await control.locator('#draft').fill('@mode instant\n**Windows確認** 👨‍👩‍👧‍👦');
+    await control.locator('#show').click();
+    await expect(output.locator('#stage')).toContainText('Windows確認');
+    await expect(control.locator('#show')).toBeFocused();
+    await control.locator('#draft').fill('再起動後の下書き');
+    await expect(output.locator('#stage')).toContainText('Windows確認');
+    await output.close();await expect(control.locator('#connection')).toContainText('閉じ');
+    await control.locator('summary').filter({hasText:'出力と連携'}).click();
+    await control.locator('#open-output').click();
+    await expect.poll(()=>app.windows().filter(p=>p.url().endsWith('.html')).length).toBe(2);
+    output=app.windows().find(p=>p.url().endsWith('/output.html'));
+    await expect(output.locator('#stage .glyph')).toHaveCount(0);
+    await control.locator('#background').fill('#123456');
+    await control.locator('#apply-settings').click();
+    await expect(output.locator('body')).toHaveCSS('background-color','rgb(18, 52, 86)');
+    await app.close();
+    ({control,output}=await launch());
+    await expect(output.locator('body')).toHaveCSS('background-color','rgb(18, 52, 86)');
+    await expect(control.locator('#draft')).toHaveValue('再起動後の下書き');
+    await expect(control.locator('#live')).toHaveAttribute('aria-pressed','false');
+    await expect(output.locator('#stage .glyph')).toHaveCount(0);
+    await app.close();app=null;
+  }finally{if(app)await app.close();await rm(data,{recursive:true,force:true});}
+});

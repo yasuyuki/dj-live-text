@@ -1,0 +1,19 @@
+{
+  "name": "dj-live-text",
+  "version": "0.1.0",
+  "description": "Live text performance for DJ streams — Windows preview",
+  "type": "module",
+  "main": "src/main.js",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/*.test.js",
+    "test:ui": "playwright test",
+    "package:win": "electron-packager . DJ-Live-Text --platform=win32 --arch=x64 --out=dist --overwrite --asar --ignore=^/test --ignore=^/test-results --ignore=^/docs --ignore=^/playwright.config.js --ignore=^/.github --ignore=^/.claude"
+  },
+  "devDependencies": {
+    "@electron/packager": "20.3.0",
+    "@playwright/test": "1.63.0",
+    "electron": "44.2.0"
+  }
+}

@@ -1,0 +1,24 @@
+<!doctype html><html lang="ja"><head><meta charset="UTF-8"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'none'; img-src 'none'"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DJ Live Text</title><link rel="stylesheet" href="display.css"><link rel="stylesheet" href="control.css"></head><body>
+<header><div><span class="eyebrow">WORDS ON THE MIX</span><h1>DJ Live Text<span class="badge">WINDOWS PREVIEW</span></h1></div><div id="mode-status" class="state">手動モード</div></header>
+<main>
+<section class="editor-panel"><div class="section-title"><h2>下書き</h2><span>編集だけでは送出されません</span></div>
+<div class="toolbar" aria-label="書式">
+<button id="emphasis" title="Ctrl+Shift+B">強調 <kbd>B</kbd></button>
+<label>色 <select id="color" title="Ctrl+Shift+C で切替"><option value="white">白</option><option value="cyan">シアン</option><option value="yellow">黄</option><option value="red">赤</option></select></label><button id="apply-color" title="Ctrl+Shift+C">色を適用</button>
+<button id="bullet" title="Ctrl+Shift+U">• 箇条書き <kbd>U</kbd></button>
+</div>
+<textarea id="draft" spellcheck="false" aria-label="下書き" placeholder="今、伝えたいことを。"></textarea>
+<div class="attributes">
+<label>表示 <select id="mode"><option value="instant">全文</option><option value="characters">文字送り</option><option value="blocks">ブロック</option><option value="combined">ブロック＋文字</option></select><kbd>Ctrl+Shift+M</kbd></label>
+<label>演出 <select id="effect"><option value="clean">クリーン</option><option value="glow">グロウ</option><option value="impact">インパクト</option></select><kbd>Ctrl+Shift+E</kbd></label>
+<label>速度 <select id="speed"><option value="slow">ゆっくり</option><option value="normal">標準</option><option value="fast">速い</option></select><kbd>Ctrl+Shift+R</kbd></label>
+</div>
+<div class="actions"><button id="show" class="primary">表示／置換 <kbd>Ctrl+Enter</kbd></button><button id="advance">進める <kbd>Ctrl+→</kbd></button><button id="clear" class="danger">消去 <kbd>Ctrl+Backspace</kbd></button></div>
+<button id="live" aria-pressed="false">ライブ入力 OFF <kbd>Ctrl+Shift+L</kbd></button>
+<p id="warning" role="status" aria-live="polite"></p><p id="storage-warning" role="status"></p>
+</section>
+<section class="preview-panel"><div class="section-title"><h2>送出プレビュー</h2><span id="dimensions">1280 × 720</span></div><div id="preview-frame"><div id="preview-surface" class="surface"><div id="preview-stage" class="text-stage"></div></div></div><p id="preview-warning"></p><div class="section-title on-air"><h2>現在の出力</h2><span id="connection">出力を確認中</span></div><p id="current">空画面</p>
+<div class="track"><div class="section-title"><h2>Funkotの曲候補</h2><span>受信だけでは送出されません</span></div><p id="track-info">連携OFF</p><button id="introduce" disabled>曲紹介 <kbd>Ctrl+Shift+T</kbd></button><p class="hint">手入力で紹介する場合は、下書きに曲名とアーティストを入力して送出できます。</p></div></section>
+<section class="settings"><details><summary>出力と連携の設定</summary><div class="settings-row"><label>幅 <input id="width" type="number" min="1" step="1"></label><label>高さ <input id="height" type="number" min="1" step="1"></label><label>表示先 <select id="display"></select></label><label><input id="fullscreen" type="checkbox">フルスクリーン</label><label>背景 <input id="background" type="color"></label></div><div class="settings-row"><label>Funkot連携ポート <input id="port" type="number" min="0" max="65535" step="1"></label><span class="hint">0＝OFF。Funkot側の連携APIが必要です。</span><button id="apply-settings">適用して消去</button><button id="open-output">出力を開く（空画面）</button></div><p class="hint">サイズはWindowsの論理ピクセル（DIP）。適用すると安全のため送出を消去します。出力は「DJ Live Text — Output」をキャプチャーしてください。</p></details></section>
+<details class="help"><summary>記法・キー操作</summary><p><code>**強調**</code> <code>[cyan|色文字]</code> （white / cyan / yellow / red）。<code>- </code>で箇条書き。空行と各箇条書き項目がブロック区切りです。途中の記法は通常文字として表示します。</p><p>先頭に <code>@mode combined</code> <code>@effect impact</code> <code>@speed normal</code> を1行ずつ置いて設定できます。選択肢は上のGUIと同じです。GUI・書式キーもこの記法を編集します。</p><p>主要操作と書式のキーは操作窓にフォーカスがある間だけ有効です。書式キーは下書き編集中に有効。IME変換中の送出キーは無効です。Ctrl+Backspaceの消去だけは変換中も使用できます。色キーはパレットを順送り。通常のUndo/Redoに対応します。</p></details>
+</main><div id="measure"></div><script type="module" src="control.js"></script></body></html>

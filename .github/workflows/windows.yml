@@ -1,0 +1,24 @@
+name: Windows preview checks
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npx install-electron
+      - run: npm test
+      - run: npx playwright install chromium
+      - run: npm run test:ui
+      - run: npm run package:win
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DJ-Live-Text-Windows-preview
+          path: dist/DJ-Live-Text-win32-x64
+          if-no-files-found: error
