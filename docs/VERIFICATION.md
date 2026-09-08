@@ -27,7 +27,9 @@ checks; it is not a runtime dependency of the Windows artifact.
 The UTF-8 response regression is covered by Windows CI
 [34238900034](https://github.com/yasuyuki/dj-live-text/actions/runs/34238900034)
 on source `e0d1031`: 12 Node and 10 Playwright tests passed, including native Electron.
-The subsequent busy-button regression additionally checks that clear cancels a pending introduction.
+Final Windows CI [34240578311](https://github.com/yasuyuki/dj-live-text/actions/runs/34240578311)
+on source `aa4ecb4` passed 12 Node and 11 Playwright tests and uploaded the Windows preview artifact.
+This includes the busy-button regression checking that clear cancels a pending introduction.
 
 Funkot Windows CI [34238896155](https://github.com/yasuyuki/funkot-player/actions/runs/34238896155)
 on code `4df64d9` passed 55 frontend tests, 319 Rust tests and one actual executable HTTP smoke test.
