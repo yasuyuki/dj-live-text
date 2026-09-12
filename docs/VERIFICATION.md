@@ -62,6 +62,35 @@ acceptance remain distinct from this automated native-host evidence.
 
 ## Required real-world trial (not executed)
 
+### Windows rescue observation — 2026-09-12
+
+Resumed from source `002f76c2f1499daf77b1bb40eec2a1f960801812` under
+[issue #1](https://github.com/yasuyuki/dj-live-text/issues/1). The installed preview exposed
+separate controller/output windows and the existing Funkot application was running.
+Only window selection and observation were performed; no draft, output setting, playback,
+capture setting or saved user data was changed. The user then explicitly deferred GUI testing
+because the desktop was in use. A later personal improvised trial is possible once prepared;
+that does not lift the current GUI hold.
+
+Read-only identity evidence: Windows build `26200.9445`, display version `25H2`;
+OBS executable `32.0.1` (not launched); installed Funkot package `0.7.1.0`;
+DJ Live Text preview `0.1.0`, Electron `44.2.0`.
+The preview executable SHA-256 is
+`b845327b2df094721694bac4470bb415741729d65a0d572c487d1560a5aaa720`;
+its `resources/app.asar` SHA-256 is
+`d4fbf291ef5f2ba985e9c8dc206db42911bc68aba938494b0fc9a0487127c2dc`.
+These identify the observed files; their correspondence to the source commit is not yet proven.
+The controller displayed 200% for the selected monitor and an 800×800 logical size with fullscreen
+enabled, but effective output geometry and the OBS capture region were not verified.
+
+All remaining real-world conditions A01–A14 are **not run in this rescue attempt**.
+The earlier automated results above are unchanged. There was no 60-minute DJ/capture trial,
+comparison without this tool, latency/frame-rate measurement, real track A/B integration trial,
+or personal usability evaluation. Phase A and C remain open. Resume with source/artifact identity,
+producer API availability and the actual capture region, then execute the outstanding matrix
+and the trial below when the desktop is available. No screenshots or private track data are
+included in this public record.
+
 The user selected OBS specified-region capture, with DJ Live Text used alongside funkot-player.
 Use that arrangement on the actual Windows host. Record Windows and OBS versions, display scale,
 output size, captured region, DJ version and this application's commit. Check the captured region
