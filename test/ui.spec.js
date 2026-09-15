@@ -22,8 +22,8 @@ async function harness(browser,width=1280,height=720){
   },document));
   await control.exposeBinding('frameBridge',async(_source,snapshot)=>output.evaluate(value=>window.frameOutput(value),{snapshot,sequence:++sequence,background:'#090b12'}));
   await control.addInitScript(({width,height})=>{
-    window.trackCandidate={connected:false};
-    window.host={load:async()=>({draft:'',width,height,background:'#090b12',fullscreen:false,display:1,port:0,displays:[{id:1,label:'Test',scaleFactor:1}]}),
+    window.trackCandidate={connected:false};window.historyEntries=[];
+    window.host={loadHistory:async()=>({ok:true,entries:[]}),archiveDraft:async value=>{const entry={...value,id:String(window.historyEntries.length+1)};window.historyEntries.push(entry);return {ok:true,entry};},load:async()=>({draft:'',width,height,background:'#090b12',fullscreen:false,display:1,port:0,displays:[{id:1,label:'Test',scaleFactor:1}]}),
       save:async value=>{window.saved=value;return true;},prepare:doc=>window.prepareBridge(doc),frame:s=>window.frameBridge(s),track:async()=>window.trackCandidate,
       onStatus:fn=>{window.statusEvent=fn;},configure:async()=>{},openOutput:async()=>{}};
   },{width,height});
@@ -157,5 +157,150 @@ test('pending track introduction is visibly busy and clear cancels its response'
   await control.evaluate(()=>window.finishIntroduction({connected:true,title:'A',artist:'Artist'}));
   await expect(control.locator('#introduce')).toBeEnabled();
   expect(await visible(output)).toBe('');
+  await context.close();
+});
+
+test('archive original source, independent native undo/redo, manual output and restore',async({browser})=>{
+  const {context,control,output}=await harness(browser);
+  const draft=control.locator('#draft');
+  await draft.fill('@mode instant\nON AIR');await control.locator('#show').click();
+  await expect.poll(()=>visible(output)).toBe('ON AIR');
+  const source='  @mode combined\n@effect impact\n@speed slow\n**日本語 [cyan|未完\n- <script>literal</script>\n ';
+  await draft.fill('');await draft.pressSequentially(source);
+  await draft.evaluate(el=>el.setSelectionRange(2,5));
+  await control.keyboard.press('F2');
+  await expect(draft).toHaveValue('');await expect(draft).toBeFocused();
+  expect(await draft.evaluate(el=>el.selectionStart)).toBe(0);
+  expect(await control.evaluate(()=>window.historyEntries.map(e=>e.source))).toEqual([source]);
+  expect(await visible(output)).toBe('ON AIR');
+  await control.keyboard.press('Control+z');await expect(draft).toHaveValue(source);
+  await control.keyboard.press('Control+y');await expect(draft).toHaveValue('');
+  expect(await control.evaluate(()=>window.historyEntries.length)).toBe(1);
+  await control.locator('#history summary').click();
+  await expect(control.locator('#history-entries pre')).toHaveText(source);
+  await expect(control.locator('#history-entries script')).toHaveCount(0);
+  await control.locator('#live').click();
+  await control.locator('#history-entries button').click();
+  await expect(draft).toHaveValue(source);await expect(draft).toBeFocused();
+  await expect(control.locator('#live')).toHaveAttribute('aria-pressed','false');
+  await expect(control.locator('#history-entries button')).toBeDisabled();
+  await expect(control.locator('#history-hint')).toContainText('現在の入力');
+  await control.locator('#archiveDraft').click();await expect(draft).toHaveValue('');
+  expect(await control.evaluate(()=>window.historyEntries.map(e=>e.source))).toEqual([source,source]);
+  await control.keyboard.press('F2');expect(await control.evaluate(()=>window.historyEntries.length)).toBe(2);
+  await context.close();
+});
+
+test('archive key guards and IME preserve the existing emergency clear',async({browser})=>{
+  const {context,control,output}=await harness(browser),draft=control.locator('#draft');
+  await draft.fill('安全');await control.locator('#live').click();await draft.focus();
+  await expect.poll(()=>visible(output)).toBe('安全');
+  for(const modifier of ['Control','Shift','Alt','Meta'])await control.keyboard.press(`${modifier}+F2`);
+  await draft.dispatchEvent('keydown',{key:'F2',repeat:true});
+  await draft.dispatchEvent('compositionstart');await control.keyboard.press('F2');
+  await expect(control.locator('#archiveDraft')).toBeDisabled();
+  await expect(draft).toHaveValue('安全');expect(await visible(output)).toBe('安全');
+  await control.keyboard.press('Control+Backspace');await expect.poll(()=>visible(output)).toBe('');
+  await draft.dispatchEvent('compositionend');
+  await control.locator('#live').focus();await control.keyboard.press('F2');
+  await control.locator('summary').filter({hasText:'出力と連携'}).click();
+  await control.locator('#width').focus();await control.keyboard.press('F2');
+  expect(await control.evaluate(()=>window.historyEntries.length)).toBe(0);
+  await expect(draft).toHaveValue('安全');
+  await context.close();
+});
+
+for(const conflict of ['input','same-source','composition','show','focus','blur','accessible-click','failure','throw'])test(`pending archive protects ${conflict}`,async({browser})=>{
+  const {context,control,output}=await harness(browser),draft=control.locator('#draft');
+  await draft.fill('@mode instant\noriginal');await control.locator('#show').click();await draft.focus();
+  await expect.poll(()=>visible(output)).toBe('original');
+  await control.evaluate(()=>{window.calls=0;window.host.archiveDraft=value=>{window.calls++;return new Promise((resolve,reject)=>{window.finishArchive=()=>{const entry={...value,id:'delayed'};window.historyEntries.push(entry);resolve({ok:true,entry});};window.failArchive=()=>resolve({ok:false});window.rejectArchive=()=>reject(Error('disk'));});};});
+  await control.keyboard.press('F2');await control.keyboard.press('F2');
+  expect(await control.evaluate(()=>window.calls)).toBe(1);
+  if(conflict==='input')await draft.fill('new input');
+  if(conflict==='same-source'){await draft.fill('change');await draft.fill('@mode instant\noriginal');}
+  if(conflict==='composition')await draft.dispatchEvent('compositionstart');
+  if(conflict==='show')await control.keyboard.press('Control+Enter');
+  if(conflict==='focus')await control.locator('#live').focus();
+  if(conflict==='blur')await control.evaluate(()=>window.dispatchEvent(new Event('blur')));
+  if(conflict==='accessible-click')await control.locator('#show').evaluate(el=>el.click());
+  await control.evaluate(kind=>window[kind==='failure'?'failArchive':kind==='throw'?'rejectArchive':'finishArchive'](),conflict);
+  await expect(control.locator('#history-status')).toContainText(['failure','throw'].includes(conflict)?'保存できません':'クリアしませんでした');
+  await expect(draft).toHaveValue(conflict==='input'?'new input':'@mode instant\noriginal');
+  expect(await visible(output)).toBe('original');
+  if(conflict==='focus')await expect(control.locator('#live')).toBeFocused();
+  await context.close();
+});
+
+test('live archive blanks without preparation, fences old prepare and follows undo/new input',async({browser})=>{
+  const {context,control,output}=await harness(browser),draft=control.locator('#draft');
+  await draft.fill('old');await control.locator('#live').click();await expect.poll(()=>visible(output)).toBe('old');
+  await control.evaluate(()=>{window.host.prepare=()=>new Promise(resolve=>window.oldPrepare=resolve);});
+  await draft.fill('pending');await control.keyboard.press('F2');
+  await expect(draft).toHaveValue('');await expect.poll(()=>visible(output)).toBe('');
+  await expect(control.locator('#live')).toHaveAttribute('aria-pressed','true');
+  await control.evaluate(()=>{window.oldPrepare({ok:true,layout:{}});window.host.prepare=doc=>window.prepareBridge(doc);});
+  expect(await visible(output)).toBe('');
+  await control.keyboard.press('Control+z');await expect(draft).toHaveValue('pending');await expect.poll(()=>visible(output)).toBe('pending');
+  await control.keyboard.press('Control+y');await expect.poll(()=>visible(output)).toBe('');
+  await draft.fill('next');await expect.poll(()=>visible(output)).toBe('next');
+  await context.close();
+});
+
+test('whitespace, overflow and disconnected output do not gate archiving',async({browser})=>{
+  const {context,control}=await harness(browser),draft=control.locator('#draft');
+  await control.evaluate(()=>{window.host.prepare=async()=>({ok:false,error:'disconnected'});});
+  for(const source of [' \n\n ','表示不能な長文'.repeat(1500)]){
+    await draft.fill(source);await control.locator('#archiveDraft').click();await expect(draft).toHaveValue('');
+    expect(await control.evaluate(()=>window.historyEntries.at(-1).source)).toBe(source);
+  }
+  await context.close();
+});
+
+test('successful storage with failed native clear retains input and output',async({browser})=>{
+  const {context,control,output}=await harness(browser),draft=control.locator('#draft');
+  await draft.fill('retain');await control.locator('#live').click();await expect.poll(()=>visible(output)).toBe('retain');
+  await control.evaluate(()=>{document.execCommand=()=>false;});
+  await draft.focus();await control.keyboard.press('F2');
+  await expect(control.locator('#history-status')).toContainText('クリアに失敗');
+  await expect(draft).toHaveValue('retain');expect(await visible(output)).toBe('retain');
+  expect(await control.evaluate(()=>window.historyEntries.map(e=>e.source))).toEqual(['retain']);
+  await context.close();
+});
+
+test('automatic progression and track polling during storage do not prevent manual archive',async({browser})=>{
+  const {context,control,output}=await harness(browser),draft=control.locator('#draft');
+  await draft.fill('@speed slow\n進行する文字列\n\n次の段落');await control.locator('#show').click();await draft.focus();
+  await control.evaluate(()=>{window.host.archiveDraft=value=>new Promise(resolve=>{window.finishArchive=()=>{const entry={...value,id:'one'};window.historyEntries.push(entry);resolve({ok:true,entry});};});});
+  await control.keyboard.press('F2');
+  await expect.poll(()=>visible(output)).toBe('進行する文字列');
+  await control.evaluate(()=>{window.trackCandidate={connected:true,title:'candidate',artist:''};});
+  await expect(control.locator('#track-info')).toContainText('candidate');
+  await control.evaluate(()=>window.finishArchive());await expect(draft).toHaveValue('');
+  expect(await visible(output)).toBe('進行する文字列');
+  await control.locator('#advance').click();await control.locator('#advance').click();
+  await expect.poll(()=>visible(output)).toBe('進行する文字列次の段落');
+  await context.close();
+});
+
+test('IME Process/229 Ctrl+Backspace clears output while other composition keys stay inert',async({browser})=>{
+  const {context,control,output}=await harness(browser),draft=control.locator('#draft');
+  await draft.fill('確定済み');await control.locator('#live').click();
+  await expect.poll(()=>visible(output)).toBe('確定済み');
+  await draft.focus();await draft.dispatchEvent('compositionstart');
+  const dispatch=options=>draft.evaluate((el,options)=>{
+    const event=new KeyboardEvent('keydown',{bubbles:true,cancelable:true,key:'Process',keyCode:229,isComposing:true,...options});
+    el.dispatchEvent(event);return event.defaultPrevented;
+  },options);
+  for(const options of [{code:'Backspace'},{code:'Backspace',ctrlKey:true,shiftKey:true},{code:'Backspace',ctrlKey:true,altKey:true},{code:'Backspace',ctrlKey:true,metaKey:true},{code:'F2'},{code:'F2',ctrlKey:true},{code:'Enter',ctrlKey:true}]){
+    expect(await dispatch(options)).toBe(false);
+    expect(await visible(output)).toBe('確定済み');
+  }
+  expect(await dispatch({code:'Backspace',ctrlKey:true})).toBe(true);
+  await expect.poll(()=>visible(output)).toBe('');
+  await expect(control.locator('#live')).toHaveAttribute('aria-pressed','false');
+  await expect(draft).toHaveValue('確定済み');
+  expect(await control.evaluate(()=>window.historyEntries.length)).toBe(0);
+  await draft.dispatchEvent('compositionend');expect(await visible(output)).toBe('');
   await context.close();
 });

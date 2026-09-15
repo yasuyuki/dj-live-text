@@ -1,10 +1,64 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtemp,rm,writeFile} from 'node:fs/promises';
+import {mkdtemp,rm,writeFile,readFile,mkdir,stat} from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import http from 'node:http';
-import {Store,settings,readTrack} from '../src/host-services.js';
+import {Store,HistoryStore,settings,readTrack} from '../src/host-services.js';
+test('history preserves exact source, repeated operations, timestamps and serialized writes across restart',async()=>{
+  const dir=await mkdtemp(path.join(os.tmpdir(),'dj-history-'));
+  try {
+    const history=new HistoryStore(dir);
+    assert.deepEqual(await history.load(),{ok:true,entries:[]});
+    const source='  @mode combined\n@effect impact\n@speed slow\n**日本語\n- [cyan|未完\n<script>alert(1)</script>  ';
+    const savedAt='2026-09-15T12:34:56.789Z';
+    const values=[source,source,' \n', '長'.repeat(100000)].map(source=>({source,savedAt}));
+    const results=await Promise.all(values.map(value=>history.archiveDraft(value)));
+    assert.ok(results.every(result=>result.ok===true));
+    assert.equal(new Set(results.map(result=>result.entry.id)).size,4);
+    const disk=JSON.parse(await readFile(history.file,'utf8'));
+    assert.deepEqual(disk,{version:1,entries:results.map(result=>result.entry)});
+    assert.deepEqual(disk.entries.map(({source,savedAt})=>({source,savedAt})),values);
+    assert.deepEqual(await new HistoryStore(dir).load(),{ok:true,entries:disk.entries});
+    const before=await stat(history.file);
+    await new Store(dir).save({draft:'typing'});
+    assert.equal((await stat(history.file)).mtimeMs,before.mtimeMs);
+    assert.equal((await history.archiveDraft({source:'',savedAt})).ok,false);
+    assert.equal((await history.archiveDraft({source:'invalid',savedAt:'not a date'})).ok,false);
+    assert.equal((await history.load()).entries.length,4);
+  }finally {await rm(dir,{recursive:true,force:true});}
+});
+test('history rejects corrupt, unsupported, duplicate and unreadable data without overwriting it',async()=>{
+  const dir=await mkdtemp(path.join(os.tmpdir(),'dj-history-'));
+  try {
+    const history=new HistoryStore(dir),value={source:'current input',savedAt:'2026-09-15T00:00:00.000Z'};
+    const entry={id:'one',...value};
+    for(const raw of ['{broken','null',JSON.stringify({version:2,entries:[]}),JSON.stringify({version:1,entries:[{...entry,source:42}]}),JSON.stringify({version:1,entries:[entry,entry]})]) {
+      await writeFile(history.file,raw);
+      assert.equal((await history.load()).ok,false);
+      assert.equal((await history.archiveDraft(value)).ok,false);
+      assert.equal(await readFile(history.file,'utf8'),raw);
+    }
+    await rm(history.file);await mkdir(history.file);
+    assert.equal((await history.load()).ok,false);
+    assert.equal((await history.archiveDraft(value)).ok,false);
+    assert.ok((await stat(history.file)).isDirectory());
+  }finally {await rm(dir,{recursive:true,force:true});}
+});
+test('history failed atomic write keeps previous file and later retry does not duplicate failed entry',async()=>{
+  const dir=await mkdtemp(path.join(os.tmpdir(),'dj-history-'));
+  try {
+    const history=new HistoryStore(dir),value={source:'original',savedAt:'2026-09-15T00:00:00.000Z'};
+    assert.equal((await history.archiveDraft(value)).ok,true);
+    const original=await readFile(history.file,'utf8');
+    await mkdir(`${history.file}.tmp`);
+    assert.equal((await history.archiveDraft({...value,source:'retry'})).ok,false);
+    assert.equal(await readFile(history.file,'utf8'),original);
+    await rm(`${history.file}.tmp`,{recursive:true});
+    assert.equal((await history.archiveDraft({...value,source:'retry'})).ok,true);
+    assert.deepEqual((await history.load()).entries.map(entry=>entry.source),['original','retry']);
+  }finally {await rm(dir,{recursive:true,force:true});}
+});
 test('save only draft/settings, recover corrupt file, latest concurrent save wins',async()=>{
   const dir=await mkdtemp(path.join(os.tmpdir(),'dj-text-'));
   try{

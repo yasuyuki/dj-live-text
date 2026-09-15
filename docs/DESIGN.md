@@ -61,3 +61,21 @@ receiver preserves the candidate selected at the button press, checks producer a
 and ignores the pending introduction if clear/replace/settings/IME supersede it. This check does
 not automatically replace the selected candidate with a later track. Real playback plus manual
 introduction remains an acceptance trial; the producer's native smoke uses an idle process.
+
+## Draft archive
+
+`archiveDraft` captures the entire textarea source and ISO acceptance timestamp before awaiting
+an explicit successful history IPC response. `history.json` has `{version:1, entries:[{id,savedAt,source}]}`;
+UUIDs are assigned in the main process. History and settings have separate serialized atomic writes.
+History is validated before appending; unreadable/malformed data is never replaced by empty history.
+Normal quit drains both stores. IPC accepts only the control window's main frame. History UI uses
+text nodes, with no interpretation of saved source.
+
+A renderer operation generation fences delayed clearing after edits (even changes back to identical
+text), composition start, keys, pointer interaction, focus changes and settings edits. Automatic ticks
+and candidate polls do not increment it. While saving, ordinary editing and delivery remain available.
+Clear uses a native deletion transaction after a focus boundary so Undo restores the full source in
+one step. Failure to delete is reported separately from successful storage. Empty live drafts cancel
+older prepare generations and publish a null frame without measurement, keeping live ON. Manual
+editing leaves the current output/progression intact. Restoring history turns live OFF before editing;
+it neither consumes the entry nor sends its contents.

@@ -62,6 +62,35 @@ acceptance remain distinct from this automated native-host evidence.
 
 ## Required real-world trial (not executed)
 
+### Windows rescue observation — 2026-09-12
+
+Resumed from source `002f76c2f1499daf77b1bb40eec2a1f960801812` under
+[issue #1](https://github.com/yasuyuki/dj-live-text/issues/1). The installed preview exposed
+separate controller/output windows and the existing Funkot application was running.
+Only window selection and observation were performed; no draft, output setting, playback,
+capture setting or saved user data was changed. The user then explicitly deferred GUI testing
+because the desktop was in use. A later personal improvised trial is possible once prepared;
+that does not lift the current GUI hold.
+
+Read-only identity evidence: Windows build `26200.9445`, display version `25H2`;
+OBS executable `32.0.1` (not launched); installed Funkot package `0.7.1.0`;
+DJ Live Text preview `0.1.0`, Electron `44.2.0`.
+The preview executable SHA-256 is
+`b845327b2df094721694bac4470bb415741729d65a0d572c487d1560a5aaa720`;
+its `resources/app.asar` SHA-256 is
+`d4fbf291ef5f2ba985e9c8dc206db42911bc68aba938494b0fc9a0487127c2dc`.
+These identify the observed files; their correspondence to the source commit is not yet proven.
+The controller displayed 200% for the selected monitor and an 800×800 logical size with fullscreen
+enabled, but effective output geometry and the OBS capture region were not verified.
+
+All remaining real-world conditions A01–A14 are **not run in this rescue attempt**.
+The earlier automated results above are unchanged. There was no 60-minute DJ/capture trial,
+comparison without this tool, latency/frame-rate measurement, real track A/B integration trial,
+or personal usability evaluation. Phase A and C remain open. Resume with source/artifact identity,
+producer API availability and the actual capture region, then execute the outstanding matrix
+and the trial below when the desktop is available. No screenshots or private track data are
+included in this public record.
+
 The user selected OBS specified-region capture, with DJ Live Text used alongside funkot-player.
 Use that arrangement on the actual Windows host. Record Windows and OBS versions, display scale,
 output size, captured region, DJ version and this application's commit. Check the captured region
@@ -81,3 +110,71 @@ character delay; about 100 ms and a smooth >=30fps capture are targets, not obse
 Finally improvise short messages without prepared scripts. Observe whether emphasis/automatic sizing
 works without manual font adjustment, whether attention returns to music, and whether send/clear
 happens at the intended time. Record failures; do not replace this judgment with test counts.
+
+## F2 input history — issue #2 (2026-09-15)
+
+Scope and remaining acceptance are tracked in [issue #2](https://github.com/yasuyuki/dj-live-text/issues/2),
+independently of the MVP trial above. Source starts from `42992ab` on `feat/archive-draft-2`.
+Linux Node 24.19.0: `npm test` passed 16 tests; `npm run test:ui` passed 25 browser tests
+with the Windows-only Electron test skipped. Browser testing uses the existing Linux library/font
+configuration; it does not certify Windows or actual Japanese IME. The added tests cover exact raw
+source, duplicate operations, whitespace/overflow, F2 safety, delayed saves and explicit failures,
+same-source edit generations, composition, focus/window switching, accessibility clicks, independent
+native Undo/Redo, manual progression, live cancellation, restore and native-clear failure.
+Node tests cover atomic serialized history storage, restart, corrupt/read/write failure protection and
+separation from settings writes. No performer data is used.
+
+The Windows Electron test additionally checks F2/modifiers, editor focus/cursor, native Undo/Redo,
+read-only history interaction, output-window IPC rejection and history persistence after restart.
+Windows CI [34978491396](https://github.com/yasuyuki/dj-live-text/actions/runs/34978491396)
+on `d738c4e` passed 16 Node tests and all 26 UI tests, including actual Electron 44.2.0
+(F2, modifiers, native Undo/Redo, focus/cursor, IPC rejection and history restart), then packaged and
+uploaded the [Windows preview artifact](https://github.com/yasuyuki/dj-live-text/actions/runs/34978491396/artifacts/10400481920).
+
+[Windows physical acceptance](https://github.com/yasuyuki/dj-live-text/issues/2#issuecomment-5681949739)
+on Windows 25H2 build 26200.9445 / Microsoft IME / Electron 44.2.0 passed F2, modifier F2,
+Undo/Redo, editor/non-editor focus and suppression of F2 during real Japanese conversion.
+The separate test profile preserved history and settings as expected. However, **Ctrl+Backspace during
+Microsoft IME conversion did not clear output** (conversion returned to an unconverted state).
+This initial failure was reaccepted on the fixed build below.
+
+The handler inherited from `42992ab` checks only `key === 'Backspace'` before its IME guard.
+A synthetic `key: 'Process', code: 'Backspace', keyCode: 229, ctrlKey: true, isComposing: true`
+event reproduced a missed clear before the fix. The handler now also checks the physical `code`,
+without changing modifier restrictions, F2 handling or the IME guard for other actions.
+The regression checks output clearing/live OFF, draft/history preservation, inert non-Ctrl and
+Shift/Alt/Meta combinations, and inert composition F2/Enter. The Windows Electron test covers the
+same synthetic Process event. The first physical trial did not capture event values; the fixed-build
+physical trial below subsequently observed this event shape. [UI Events](https://www.w3.org/TR/uievents/) permits IME suppression of events/values; no DOM
+handler can recover an event the IME never delivers.
+
+Fix validation: Linux Node 24.19.0 passed 16 Node and 26 browser tests (Windows native skipped).
+[Windows CI 34982290898](https://github.com/yasuyuki/dj-live-text/actions/runs/34982290898)
+on `bb40bc8` passed 16 Node and all 27 UI tests, including target Electron's synthetic Process/229
+regression. Packaging and [artifact upload](https://github.com/yasuyuki/dj-live-text/actions/runs/34982290898/artifacts/10401958023)
+also passed.
+
+[Physical reacceptance, 2026-09-16 JST](https://github.com/yasuyuki/dj-live-text/issues/2#issuecomment-5682598976)
+passed on the `bb40bc8` artifact above, Electron 44.2.0 / Microsoft IME, using a separate test profile.
+In both manual and live modes, physical Ctrl+Backspace during conversion cleared output, switched
+live OFF and preserved the draft; F2 remained suppressed and committing composition did not restore
+old output. No history was added by those IME actions. Physical F2 hold produced one initial keydown
+and 165 repeat keydowns, but only one history entry and an empty draft.
+
+The physical keydown was observed as trusted `key: Process`, `code: Backspace`, `keyCode: 229`,
+Ctrl alone, with both composition indicators true. Physical F2 during conversion similarly carried
+`key: Process`, `code: F2`, `keyCode: 229`. This confirms the event-shape diagnosis on the new build;
+it does not retroactively measure the previous artifact. Windows automatic input instead supplied
+an empty `code` and did not clear output. That synthetic-input limitation is distinct from the
+successful physical keyboard acceptance; arbitrary Process/229 events must not become clear actions.
+
+Final physical check: after restarting the same fixed artifact with a fresh isolated
+`DJ_LIVE_TEXT_DATA`, the user reported all remaining operations normal and successful shutdown.
+This completes the other-application foreground F2 check: draft, history and output remained
+unchanged, and both acceptance windows could be closed. The earlier Computer Use URL-identification
+stop was a tooling limitation; the final evidence is the user's manual report, not automated GUI
+execution. Prior physical focus/modifier/Undo/IME/repeat acceptance and CI results are retained.
+
+Issue #2's implementation and acceptance contract is complete on the work branch. Main integration
+has not been performed. No operational checkout, user profile or installed preview was changed;
+main integration, release/signing and issue #1's unrelated trials remain outside this change.
