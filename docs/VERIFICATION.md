@@ -126,7 +126,10 @@ separation from settings writes. No performer data is used.
 
 The Windows Electron test additionally checks F2/modifiers, editor focus/cursor, native Undo/Redo,
 read-only history interaction, output-window IPC rejection and history persistence after restart.
-Windows CI execution is reported in issue #2. Real Japanese IME conversion suppression and physical
+Windows CI [34978491396](https://github.com/yasuyuki/dj-live-text/actions/runs/34978491396)
+on `d738c4e` passed 16 Node tests and all 26 UI tests, including actual Electron 44.2.0
+(F2, modifiers, native Undo/Redo, focus/cursor, IPC rejection and history restart), then packaged and
+uploaded the [Windows preview artifact](https://github.com/yasuyuki/dj-live-text/actions/runs/34978491396/artifacts/10400481920). Real Japanese IME conversion suppression and physical
 Windows keyboard/focus behavior remain **not run**; synthetic events are not acceptance evidence for
 real IME. This environment has Linux browser capability; it cannot perform the user's Windows desktop
 IME trial. No operational checkout or installed preview was changed. Issue #2 must remain open until
