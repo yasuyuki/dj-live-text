@@ -8,6 +8,9 @@
 <button id="bullet" title="Ctrl+Shift+U">• 箇条書き <kbd>U</kbd></button>
 </div>
 <textarea id="draft" spellcheck="false" aria-label="下書き" placeholder="今、伝えたいことを。"></textarea>
+<button id="archiveDraft">履歴に保存してクリア（F2）</button>
+<p id="history-status" role="status" aria-live="polite"></p>
+<details id="history"><summary>入力履歴</summary><p id="history-hint"></p><div id="history-entries"></div></details>
 <div class="attributes">
 <label>表示 <select id="mode"><option value="instant">全文</option><option value="characters">文字送り</option><option value="blocks">ブロック</option><option value="combined">ブロック＋文字</option></select><kbd>Ctrl+Shift+M</kbd></label>
 <label>演出 <select id="effect"><option value="clean">クリーン</option><option value="glow">グロウ</option><option value="impact">インパクト</option></select><kbd>Ctrl+Shift+E</kbd></label>

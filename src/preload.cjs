@@ -2,6 +2,7 @@ const {contextBridge,ipcRenderer} = require('electron');
 const receive = channel => fn => {ipcRenderer.on(channel,(_event,value)=>fn(value));};
 contextBridge.exposeInMainWorld('host', {
   load:()=>ipcRenderer.invoke('load'),save:value=>ipcRenderer.invoke('save',value),
+  loadHistory:()=>ipcRenderer.invoke('load-history'),archiveDraft:value=>ipcRenderer.invoke('archive-draft',value),
   prepare:document=>ipcRenderer.invoke('prepare',document),
   frame:snapshot=>ipcRenderer.send('frame',snapshot),
   configure:value=>ipcRenderer.invoke('configure',value),

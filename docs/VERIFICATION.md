@@ -110,3 +110,25 @@ character delay; about 100 ms and a smooth >=30fps capture are targets, not obse
 Finally improvise short messages without prepared scripts. Observe whether emphasis/automatic sizing
 works without manual font adjustment, whether attention returns to music, and whether send/clear
 happens at the intended time. Record failures; do not replace this judgment with test counts.
+
+## F2 input history — issue #2 (2026-09-15)
+
+Scope and remaining acceptance are tracked in [issue #2](https://github.com/yasuyuki/dj-live-text/issues/2),
+independently of the MVP trial above. Source starts from `42992ab` on `feat/archive-draft-2`.
+Linux Node 24.19.0: `npm test` passed 16 tests; `npm run test:ui` passed 25 browser tests
+with the Windows-only Electron test skipped. Browser testing uses the existing Linux library/font
+configuration; it does not certify Windows or actual Japanese IME. The added tests cover exact raw
+source, duplicate operations, whitespace/overflow, F2 safety, delayed saves and explicit failures,
+same-source edit generations, composition, focus/window switching, accessibility clicks, independent
+native Undo/Redo, manual progression, live cancellation, restore and native-clear failure.
+Node tests cover atomic serialized history storage, restart, corrupt/read/write failure protection and
+separation from settings writes. No performer data is used.
+
+The Windows Electron test additionally checks F2/modifiers, editor focus/cursor, native Undo/Redo,
+read-only history interaction, output-window IPC rejection and history persistence after restart.
+Windows CI execution is reported in issue #2. Real Japanese IME conversion suppression and physical
+Windows keyboard/focus behavior remain **not run**; synthetic events are not acceptance evidence for
+real IME. This environment has Linux browser capability; it cannot perform the user's Windows desktop
+IME trial. No operational checkout or installed preview was changed. Issue #2 must remain open until
+that required acceptance is returned. Main integration, release/signing and issue #1's other trials
+are outside this change.

@@ -21,6 +21,19 @@ test('Windows native host: two windows, measured send, output close, persisted d
     await control.locator('#show').click();
     await expect(output.locator('#stage')).toContainText('Windows確認');
     await expect(control.locator('#show')).toBeFocused();
+    const draft=control.locator('#draft'),archived='日本語 **履歴**\n末尾 ';
+    await draft.fill('');await draft.pressSequentially(archived);
+    for(const modifier of ['Control','Shift','Alt','Meta'])await control.keyboard.press(`${modifier}+F2`);
+    await expect(draft).toHaveValue(archived);
+    await control.keyboard.press('F2');await expect(draft).toHaveValue('');await expect(draft).toBeFocused();
+    expect(await draft.evaluate(el=>el.selectionStart)).toBe(0);
+    await control.keyboard.press('Control+z');await expect(draft).toHaveValue(archived);
+    await control.keyboard.press('Control+y');await expect(draft).toHaveValue('');
+    await control.locator('#history summary').click();await expect(control.locator('#history-entries pre')).toHaveText(archived);
+    expect(await output.evaluate(()=>window.host.loadHistory())).toMatchObject({ok:false});
+    expect(await output.evaluate(()=>window.host.archiveDraft({source:'forbidden',savedAt:new Date().toISOString()}))).toMatchObject({ok:false});
+    await control.locator('#history-entries button').focus();await control.keyboard.press('F2');
+    await expect(control.locator('#history-entries article')).toHaveCount(1);
     await control.locator('#draft').fill('再起動後の下書き');
     await expect(output.locator('#stage')).toContainText('Windows確認');
     await output.close();await expect(control.locator('#connection')).toContainText('閉じ');
@@ -36,6 +49,7 @@ test('Windows native host: two windows, measured send, output close, persisted d
     ({control,output}=await launch());
     await expect(output.locator('body')).toHaveCSS('background-color','rgb(18, 52, 86)');
     await expect(control.locator('#draft')).toHaveValue('再起動後の下書き');
+    await control.locator('#history summary').click();await expect(control.locator('#history-entries pre')).toHaveText(archived);
     await expect(control.locator('#live')).toHaveAttribute('aria-pressed','false');
     await expect(output.locator('#stage .glyph')).toHaveCount(0);
     await app.close();app=null;

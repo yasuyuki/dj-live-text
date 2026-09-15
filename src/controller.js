@@ -49,6 +49,10 @@ export class Controller {
   async setDraft(source) {
     this.draft = String(source ?? '');
     if (this.live && !this.composing) {
+      if (this.draft === '') {
+        this._cancel();this.current=null;this._publish();
+        this.report({error:null,unreflected:false});return true;
+      }
       return this._showDocument(parseDocument(this.draft), true);
     }
     return false;

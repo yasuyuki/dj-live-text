@@ -1,6 +1,7 @@
 import {readFile,writeFile,rename,mkdir} from 'node:fs/promises';
 import path from 'node:path';
 import http from 'node:http';
+import {randomUUID} from 'node:crypto';
 export const defaults = {draft:'**今夜もありがとう！**\n\n- [cyan|音楽を楽しもう]\n- 次の曲へ',width:1280,height:720,background:'#090b12',fullscreen:false,display:null,port:0};
 export function settings(value = {}) {
   const dimension = (n,fallback) => Number.isSafeInteger(n) && n > 0 ? n : fallback;
@@ -22,6 +23,48 @@ export class Store {
       await mkdir(path.dirname(this.file),{recursive:true});
       await writeFile(`${this.file}.tmp`,JSON.stringify(clean,null,2),'utf8');
       await rename(`${this.file}.tmp`,this.file);
+    });
+    return this.queue;
+  }
+}
+const validTimestamp = value => typeof value === 'string' && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value;
+function validEntry(value) {
+  return value && typeof value.id === 'string' && value.id.length > 0 && validTimestamp(value.savedAt) && typeof value.source === 'string'
+    && Object.keys(value).every(key=>['id','savedAt','source'].includes(key));
+}
+export class HistoryStore {
+  constructor(directory) {this.file=path.join(directory,'history.json');this.queue=Promise.resolve();}
+  async read() {
+    let text;
+    try {text=await readFile(this.file,'utf8');}
+    catch(error) {if(error.code==='ENOENT')return [];throw error;}
+    const data=JSON.parse(text);
+    if(!data || data.version!==1 || !Array.isArray(data.entries) || !Object.keys(data).every(key=>['version','entries'].includes(key))
+      || !data.entries.every(validEntry) || new Set(data.entries.map(entry=>entry.id)).size!==data.entries.length)throw Error('Invalid history');
+    return data.entries;
+  }
+  load() {
+    this.queue=this.queue.catch(()=>{}).then(async()=>{
+      try {return {ok:true,entries:await this.read()};}
+      catch {return {ok:false,error:'入力履歴を読めません。既存ファイルを保護するため保存できません。'};}
+    });
+    return this.queue;
+  }
+  archiveDraft(value) {
+    if(!value || typeof value.source!=='string' || value.source.length===0 || !validTimestamp(value.savedAt))
+      return Promise.resolve({ok:false,error:'入力履歴の保存内容が不正です。'});
+    // Snapshot before entering the queue; later caller edits cannot change this operation.
+    const entry={id:randomUUID(),savedAt:value.savedAt,source:value.source};
+    this.queue=this.queue.catch(()=>{}).then(async()=>{
+      let entries;
+      try {entries=await this.read();}
+      catch {return {ok:false,error:'入力履歴を読めません。既存ファイルを保護するため保存できません。'};}
+      try {
+        await mkdir(path.dirname(this.file),{recursive:true});
+        await writeFile(`${this.file}.tmp`,JSON.stringify({version:1,entries:[...entries,entry]},null,2),'utf8');
+        await rename(`${this.file}.tmp`,this.file);
+        return {ok:true,entry};
+      }catch {return {ok:false,error:'入力履歴を保存できませんでした。入力は残しています。'};}
     });
     return this.queue;
   }

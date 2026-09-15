@@ -162,3 +162,14 @@ test('live display is immediately complete and cannot be replayed', async () => 
     assert.equal(controller.current.visible, controller.current.total);
   }
 });
+
+test('empty live draft bypasses prepare, cancels old preparation and keeps live enabled',async()=>{
+  let resolve,prepares=0;
+  const controller=new Controller({prepare:()=>{prepares++;return new Promise(done=>resolve=done);}});
+  controller.live=true;
+  const old=controller.setDraft('old');
+  await controller.setDraft('');
+  assert.equal(prepares,1);assert.equal(controller.current,null);assert.equal(controller.live,true);
+  resolve({ok:true,layout:{}});await old;
+  assert.equal(controller.current,null);
+});

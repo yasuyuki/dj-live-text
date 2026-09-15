@@ -1,11 +1,11 @@
 import {app,BrowserWindow,ipcMain,Menu,screen,session} from 'electron';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
-import {Store,settings,readTrack} from './host-services.js';
+import {Store,HistoryStore,settings,readTrack} from './host-services.js';
 const here=path.dirname(fileURLToPath(import.meta.url));
 // Tests use a separate directory, never the performer's saved draft.
 if(process.env.DJ_LIVE_TEXT_DATA)app.setPath('userData',path.resolve(process.env.DJ_LIVE_TEXT_DATA));
-let control,output,config,store,sequence=0,request=0,pending,heartbeat=0;
+let control,output,config,store,history,sequence=0,request=0,pending,heartbeat=0;
 function send(channel,value) {if(control&&!control.isDestroyed())control.webContents.send(channel,value);}
 function cancelPrepare(error='出力更新を取り消しました。') {if(pending){clearTimeout(pending.timer);pending.resolve({ok:false,error});pending=null;}}
 function blank() {cancelPrepare();if(output&&!output.isDestroyed())output.webContents.send('frame-output',{snapshot:null,sequence:++sequence,background:config.background});}
@@ -41,6 +41,7 @@ else app.whenReady().then(async()=>{
   Menu.setApplicationMenu(null);
   session.defaultSession.setPermissionRequestHandler((_contents,_permission,callback)=>callback(false));
   store=new Store(app.getPath('userData'));
+  history=new HistoryStore(app.getPath('userData'));
   const loaded=await store.load();config=loaded.value;
   control=new BrowserWindow({width:1200,height:880,minWidth:860,minHeight:650,title:'DJ Live Text',backgroundColor:'#10121b',
     webPreferences:{preload:path.join(here,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true,backgroundThrottling:false}});
@@ -50,9 +51,14 @@ else app.whenReady().then(async()=>{
   control.on('closed',()=>app.quit());
   ipcMain.handle('load',event=>valid(event,control)?{...config,loadError:loaded.error||'',displays:screen.getAllDisplays().map(d=>({id:d.id,label:d.label||`${d.bounds.width} × ${d.bounds.height}`,scaleFactor:d.scaleFactor}))}:null);
   ipcMain.handle('save',async(event,value)=>{
-    if(!valid(event,control))return false;
+    if(flushing||!valid(event,control))return false;
     config=settings(value);
     try{await store.save(config);return true;}catch{send('status',{storageError:'下書き・設定を保存できません。'});return false;}
+  });
+  ipcMain.handle('load-history',event=>valid(event,control)?history.load():{ok:false,error:'入力履歴へのアクセスを拒否しました。'});
+  ipcMain.handle('archive-draft',(event,value)=>{
+    if(flushing||!valid(event,control))return {ok:false,error:'入力履歴の保存を受け付けられません。'};
+    return history.archiveDraft(value);
   });
   ipcMain.handle('configure',(event,value)=>{if(!valid(event,control))return;config=settings(value);configureOutput();blank();});
   ipcMain.handle('open-output',event=>{if(valid(event,control)){blank();openOutput();}});
@@ -84,8 +90,10 @@ else app.whenReady().then(async()=>{
   await control.loadFile(path.join(here,'index.html'));
   openOutput();
 });
-let flushing=false;
+let flushing=false,flushed=false;
 app.on('before-quit',event=>{
-  if(store&&!flushing){event.preventDefault();flushing=true;store.queue.catch(()=>{}).finally(()=>app.quit());}
+  if(!store||flushed)return;
+  event.preventDefault();
+  if(!flushing){flushing=true;Promise.allSettled([store.queue,history.queue]).finally(()=>{flushed=true;app.quit();});}
 });
 app.on('window-all-closed',()=>app.quit());
