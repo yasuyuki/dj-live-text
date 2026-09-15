@@ -52,6 +52,18 @@ test('Windows native host: two windows, measured send, output close, persisted d
     await control.locator('#history summary').click();await expect(control.locator('#history-entries pre')).toHaveText(archived);
     await expect(control.locator('#live')).toHaveAttribute('aria-pressed','false');
     await expect(output.locator('#stage .glyph')).toHaveCount(0);
+    // Synthetic Process/229 verifies the renderer path in target Electron, not real IME.
+    await control.locator('#draft').fill('@mode instant\nIME消去');await control.locator('#show').click();
+    await expect(output.locator('#stage')).toContainText('IME消去');
+    await control.locator('#draft').focus();await control.locator('#draft').dispatchEvent('compositionstart');
+    await control.locator('#draft').dispatchEvent('keydown',{key:'Process',code:'F2',keyCode:229,isComposing:true});
+    await expect(output.locator('#stage')).toContainText('IME消去');
+    await control.locator('#draft').dispatchEvent('keydown',{key:'Process',code:'Backspace',keyCode:229,ctrlKey:true,isComposing:true});
+    await expect(output.locator('#stage .glyph')).toHaveCount(0);
+    await expect(control.locator('#draft')).toHaveValue('@mode instant\nIME消去');
+    await expect(control.locator('#history-entries article')).toHaveCount(1);
+    await control.locator('#draft').dispatchEvent('compositionend');
+    await expect(output.locator('#stage .glyph')).toHaveCount(0);
     await app.close();app=null;
   }finally{if(app)await app.close();await rm(data,{recursive:true,force:true});}
 });

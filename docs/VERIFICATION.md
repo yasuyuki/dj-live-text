@@ -129,9 +129,30 @@ read-only history interaction, output-window IPC rejection and history persisten
 Windows CI [34978491396](https://github.com/yasuyuki/dj-live-text/actions/runs/34978491396)
 on `d738c4e` passed 16 Node tests and all 26 UI tests, including actual Electron 44.2.0
 (F2, modifiers, native Undo/Redo, focus/cursor, IPC rejection and history restart), then packaged and
-uploaded the [Windows preview artifact](https://github.com/yasuyuki/dj-live-text/actions/runs/34978491396/artifacts/10400481920). Real Japanese IME conversion suppression and physical
-Windows keyboard/focus behavior remain **not run**; synthetic events are not acceptance evidence for
-real IME. This environment has Linux browser capability; it cannot perform the user's Windows desktop
-IME trial. No operational checkout or installed preview was changed. Issue #2 must remain open until
-that required acceptance is returned. Main integration, release/signing and issue #1's other trials
-are outside this change.
+uploaded the [Windows preview artifact](https://github.com/yasuyuki/dj-live-text/actions/runs/34978491396/artifacts/10400481920).
+
+[Windows physical acceptance](https://github.com/yasuyuki/dj-live-text/issues/2#issuecomment-5681949739)
+on Windows 25H2 build 26200.9445 / Microsoft IME / Electron 44.2.0 passed F2, modifier F2,
+Undo/Redo, editor/non-editor focus and suppression of F2 during real Japanese conversion.
+The separate test profile preserved history and settings as expected. However, **Ctrl+Backspace during
+Microsoft IME conversion did not clear output** (conversion returned to an unconverted state).
+Issue #2 remains open and PR #3 draft. Other-app F2 and physical hold/repeat are not yet checked.
+
+The handler inherited from `42992ab` checks only `key === 'Backspace'` before its IME guard.
+A synthetic `key: 'Process', code: 'Backspace', keyCode: 229, ctrlKey: true, isComposing: true`
+event reproduced a missed clear before the fix. The handler now also checks the physical `code`,
+without changing modifier restrictions, F2 handling or the IME guard for other actions.
+The regression checks output clearing/live OFF, draft/history preservation, inert non-Ctrl and
+Shift/Alt/Meta combinations, and inert composition F2/Enter. The Windows Electron test covers the
+same synthetic Process event. This proves the previously missing event-shape path, **not** that the
+reported Microsoft IME delivered that shape: actual event values were not captured in the physical
+trial. [UI Events](https://www.w3.org/TR/uievents/) permits IME suppression of events/values; no DOM
+handler can recover an event the IME never delivers.
+
+Reaccept the reported physical sequence on the updated Windows artifact: manually send, type
+Japanese and convert with Space, confirm F2 stays inert, then Ctrl+Backspace must blank output.
+Also retain input/history, live-OFF-on-clear and no stale output after composition ends. If it still
+fails, diagnose the actual native and DOM key event delivery before expanding the fix; collect only
+control-key metadata with synthetic text, not real draft/history contents. This Linux environment
+cannot execute that desktop trial. No operational checkout or installed preview was changed;
+main integration, release/signing and issue #1's unrelated trials remain outside this change.

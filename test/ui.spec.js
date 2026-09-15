@@ -282,3 +282,25 @@ test('automatic progression and track polling during storage do not prevent manu
   await expect.poll(()=>visible(output)).toBe('進行する文字列次の段落');
   await context.close();
 });
+
+test('IME Process/229 Ctrl+Backspace clears output while other composition keys stay inert',async({browser})=>{
+  const {context,control,output}=await harness(browser),draft=control.locator('#draft');
+  await draft.fill('確定済み');await control.locator('#live').click();
+  await expect.poll(()=>visible(output)).toBe('確定済み');
+  await draft.focus();await draft.dispatchEvent('compositionstart');
+  const dispatch=options=>draft.evaluate((el,options)=>{
+    const event=new KeyboardEvent('keydown',{bubbles:true,cancelable:true,key:'Process',keyCode:229,isComposing:true,...options});
+    el.dispatchEvent(event);return event.defaultPrevented;
+  },options);
+  for(const options of [{code:'Backspace'},{code:'Backspace',ctrlKey:true,shiftKey:true},{code:'Backspace',ctrlKey:true,altKey:true},{code:'Backspace',ctrlKey:true,metaKey:true},{code:'F2'},{code:'F2',ctrlKey:true},{code:'Enter',ctrlKey:true}]){
+    expect(await dispatch(options)).toBe(false);
+    expect(await visible(output)).toBe('確定済み');
+  }
+  expect(await dispatch({code:'Backspace',ctrlKey:true})).toBe(true);
+  await expect.poll(()=>visible(output)).toBe('');
+  await expect(control.locator('#live')).toHaveAttribute('aria-pressed','false');
+  await expect(draft).toHaveValue('確定済み');
+  expect(await control.evaluate(()=>window.historyEntries.length)).toBe(0);
+  await draft.dispatchEvent('compositionend');expect(await visible(output)).toBe('');
+  await context.close();
+});

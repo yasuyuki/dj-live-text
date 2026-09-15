@@ -167,7 +167,9 @@ addEventListener('keydown',event=>{
   }
   operationVersion++;
   if(!event.ctrlKey||event.altKey||event.metaKey)return;
-  if(event.key==='Backspace'&&!event.shiftKey){event.preventDefault();actions.clear();return;}
+  // IME may replace key with Process/Unidentified and keyCode with 229.
+  // Retain the physical Backspace identity before the composition guard.
+  if((event.code==='Backspace'||event.key==='Backspace')&&!event.shiftKey){event.preventDefault();actions.clear();return;}
   if(event.isComposing||controller.composing||event.keyCode===229)return;
   const key=event.key.toLowerCase();let action;
   if(!event.shiftKey&&key==='enter')action=actions.show;
