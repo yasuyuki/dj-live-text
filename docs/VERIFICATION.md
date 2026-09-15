@@ -168,10 +168,13 @@ it does not retroactively measure the previous artifact. Windows automatic input
 an empty `code` and did not clear output. That synthetic-input limitation is distinct from the
 successful physical keyboard acceptance; arbitrary Process/229 events must not become clear actions.
 
-Remaining: F2 with another application in the foreground. Computer Use could not reliably identify
-a browser URL during preparation, so GUI work stopped before this check. This is an unperformed
-acceptance condition, not a newly observed product defect. Normal shutdown of the acceptance app
-was also unconfirmed at that stop and was requested from the user. Keep Issue #2 open and PR #3 draft
-until the remaining result is returned. Prior accepted focus/modifier/Undo checks and CI are retained.
-No operational checkout, user profile, installed preview or main was changed; main integration,
-release/signing and issue #1's unrelated trials remain outside this change.
+Final physical check: after restarting the same fixed artifact with a fresh isolated
+`DJ_LIVE_TEXT_DATA`, the user reported all remaining operations normal and successful shutdown.
+This completes the other-application foreground F2 check: draft, history and output remained
+unchanged, and both acceptance windows could be closed. The earlier Computer Use URL-identification
+stop was a tooling limitation; the final evidence is the user's manual report, not automated GUI
+execution. Prior physical focus/modifier/Undo/IME/repeat acceptance and CI results are retained.
+
+Issue #2's implementation and acceptance contract is complete on the work branch. Main integration
+has not been performed. No operational checkout, user profile or installed preview was changed;
+main integration, release/signing and issue #1's unrelated trials remain outside this change.
