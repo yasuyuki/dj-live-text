@@ -149,6 +149,12 @@ reported Microsoft IME delivered that shape: actual event values were not captur
 trial. [UI Events](https://www.w3.org/TR/uievents/) permits IME suppression of events/values; no DOM
 handler can recover an event the IME never delivers.
 
+Fix validation: Linux Node 24.19.0 passed 16 Node and 26 browser tests (Windows native skipped).
+[Windows CI 34982290898](https://github.com/yasuyuki/dj-live-text/actions/runs/34982290898)
+on `bb40bc8` passed 16 Node and all 27 UI tests, including target Electron's synthetic Process/229
+regression. Packaging and [artifact upload](https://github.com/yasuyuki/dj-live-text/actions/runs/34982290898/artifacts/10401958023)
+also passed. Physical Microsoft IME reacceptance remains pending.
+
 Reaccept the reported physical sequence on the updated Windows artifact: manually send, type
 Japanese and convert with Space, confirm F2 stays inert, then Ctrl+Backspace must blank output.
 Also retain input/history, live-OFF-on-clear and no stale output after composition ends. If it still
