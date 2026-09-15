@@ -136,7 +136,7 @@ on Windows 25H2 build 26200.9445 / Microsoft IME / Electron 44.2.0 passed F2, mo
 Undo/Redo, editor/non-editor focus and suppression of F2 during real Japanese conversion.
 The separate test profile preserved history and settings as expected. However, **Ctrl+Backspace during
 Microsoft IME conversion did not clear output** (conversion returned to an unconverted state).
-Issue #2 remains open and PR #3 draft. Other-app F2 and physical hold/repeat are not yet checked.
+This initial failure was reaccepted on the fixed build below.
 
 The handler inherited from `42992ab` checks only `key === 'Backspace'` before its IME guard.
 A synthetic `key: 'Process', code: 'Backspace', keyCode: 229, ctrlKey: true, isComposing: true`
@@ -144,21 +144,34 @@ event reproduced a missed clear before the fix. The handler now also checks the 
 without changing modifier restrictions, F2 handling or the IME guard for other actions.
 The regression checks output clearing/live OFF, draft/history preservation, inert non-Ctrl and
 Shift/Alt/Meta combinations, and inert composition F2/Enter. The Windows Electron test covers the
-same synthetic Process event. This proves the previously missing event-shape path, **not** that the
-reported Microsoft IME delivered that shape: actual event values were not captured in the physical
-trial. [UI Events](https://www.w3.org/TR/uievents/) permits IME suppression of events/values; no DOM
+same synthetic Process event. The first physical trial did not capture event values; the fixed-build
+physical trial below subsequently observed this event shape. [UI Events](https://www.w3.org/TR/uievents/) permits IME suppression of events/values; no DOM
 handler can recover an event the IME never delivers.
 
 Fix validation: Linux Node 24.19.0 passed 16 Node and 26 browser tests (Windows native skipped).
 [Windows CI 34982290898](https://github.com/yasuyuki/dj-live-text/actions/runs/34982290898)
 on `bb40bc8` passed 16 Node and all 27 UI tests, including target Electron's synthetic Process/229
 regression. Packaging and [artifact upload](https://github.com/yasuyuki/dj-live-text/actions/runs/34982290898/artifacts/10401958023)
-also passed. Physical Microsoft IME reacceptance remains pending.
+also passed.
 
-Reaccept the reported physical sequence on the updated Windows artifact: manually send, type
-Japanese and convert with Space, confirm F2 stays inert, then Ctrl+Backspace must blank output.
-Also retain input/history, live-OFF-on-clear and no stale output after composition ends. If it still
-fails, diagnose the actual native and DOM key event delivery before expanding the fix; collect only
-control-key metadata with synthetic text, not real draft/history contents. This Linux environment
-cannot execute that desktop trial. No operational checkout or installed preview was changed;
-main integration, release/signing and issue #1's unrelated trials remain outside this change.
+[Physical reacceptance, 2026-09-16 JST](https://github.com/yasuyuki/dj-live-text/issues/2#issuecomment-5682598976)
+passed on the `bb40bc8` artifact above, Electron 44.2.0 / Microsoft IME, using a separate test profile.
+In both manual and live modes, physical Ctrl+Backspace during conversion cleared output, switched
+live OFF and preserved the draft; F2 remained suppressed and committing composition did not restore
+old output. No history was added by those IME actions. Physical F2 hold produced one initial keydown
+and 165 repeat keydowns, but only one history entry and an empty draft.
+
+The physical keydown was observed as trusted `key: Process`, `code: Backspace`, `keyCode: 229`,
+Ctrl alone, with both composition indicators true. Physical F2 during conversion similarly carried
+`key: Process`, `code: F2`, `keyCode: 229`. This confirms the event-shape diagnosis on the new build;
+it does not retroactively measure the previous artifact. Windows automatic input instead supplied
+an empty `code` and did not clear output. That synthetic-input limitation is distinct from the
+successful physical keyboard acceptance; arbitrary Process/229 events must not become clear actions.
+
+Remaining: F2 with another application in the foreground. Computer Use could not reliably identify
+a browser URL during preparation, so GUI work stopped before this check. This is an unperformed
+acceptance condition, not a newly observed product defect. Normal shutdown of the acceptance app
+was also unconfirmed at that stop and was requested from the user. Keep Issue #2 open and PR #3 draft
+until the remaining result is returned. Prior accepted focus/modifier/Undo checks and CI are retained.
+No operational checkout, user profile, installed preview or main was changed; main integration,
+release/signing and issue #1's unrelated trials remain outside this change.
